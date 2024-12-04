@@ -1,5 +1,6 @@
 import sys
 import code
+from test4 import test4
 
 
 global_capture_testcase_frame = {
@@ -11,6 +12,7 @@ global_capture_testcase_frame = {
 def hey(a, b):
     a += 3
     b += 2
+    test4(a, b)
 
 def test(a=4, b=3, f=5):
     def test2(c, d):
@@ -27,11 +29,13 @@ def tracefunc(frame, event, arg):
         code_object = frame.f_code
         func_name = code_object.co_name
         func_obj = frame.f_globals.get(func_name, None)
+        file_name = code_object.co_filename
+        function_name = "{}:{}".format(file_name, func_name)
         parameter_names = list(frame.f_locals.keys())
         capture_testcase_frame = {
             'frame': frame,
             "parameters": {},
-            "func_name": func_name
+            "func_name": function_name
         }
         for name in parameter_names:
             capture_testcase_frame['parameters'][name] = frame.f_locals[name]
@@ -63,7 +67,8 @@ def jump_stack(global_capture_testcase_frame, target_stack_id, initial=False):
         "func_name": func_name
     }
     return [True, scope_dict]
- 
+
+
 def vf():
     if global_capture_testcase_frame["CURRENT_SCOPE_ID"] >= global_capture_testcase_frame['frame_count']:
         print("You are on the end of stack, not able to jump")
@@ -75,19 +80,24 @@ def vf():
     state, scope_dict = jump_stack(global_capture_testcase_frame, target_stack_id)
     global_capture_testcase_frame["CURRENT_SCOPE_ID"] = target_stack_id
     if state:
-        if target_stack_id > 1:
-            # I want to exit code.interact, not the whole program, but only the current stack
-            exit()
+        # if target_stack_id > 1:
+        #     # I want to exit code.interact, not the whole program, but only the current stack
+        #     exit()
 
         debug_scope = scope_dict['debug_scope']
         func_name = scope_dict['func_name']
         parameters = scope_dict['parameters']
+        debug_scope['vf'] = vf
+        debug_scope['vb'] = vb
+        debug_scope['v'] = v
+        debug_scope['global_capture_testcase_frame'] = global_capture_testcase_frame
         print("Travel back to: {}".format(func_name))
         for key, value in parameters.items():
             print("  Parameter: {} = {}".format(key, value))
         code.interact(local=debug_scope)
     else:
         print("Unknow error")
+
 
 def vb():
     if not global_capture_testcase_frame["CURRENT_SCOPE_ID"]:
@@ -105,6 +115,10 @@ def vb():
         debug_scope = scope_dict['debug_scope']
         func_name = scope_dict['func_name']
         parameters = scope_dict['parameters']
+        debug_scope['vf'] = vf
+        debug_scope['vb'] = vb
+        debug_scope['v'] = v
+        debug_scope['global_capture_testcase_frame'] = global_capture_testcase_frame
         print("Travel back to: {}".format(func_name))
         for key, value in parameters.items():
             print("  Parameter: {} = {}".format(key, value))
